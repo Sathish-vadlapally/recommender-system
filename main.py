@@ -8,7 +8,7 @@ from scipy.sparse import load_npz
 app = FastAPI()
 
 # Load model
-with open("model.pkl", "rb") as f:
+with open("lightfm_model.pkl", "rb") as f:
     model = pickle.load(f)
 
 interactions = load_npz("interactions.npz")
