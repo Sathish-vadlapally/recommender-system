@@ -2,7 +2,6 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import pickle
 import numpy as np
-from sklearn.preprocessing import LabelEncoder
 
 app = FastAPI()
 
@@ -16,23 +15,26 @@ with open("user_encoder.pkl", "rb") as f:
 with open("item_encoder.pkl", "rb") as f:
     item_encoder = pickle.load(f)
 
+# Build item index to product_id decoder
+item_decoder = {i: item_encoder.classes_[i] for i in range(len(item_encoder.classes_))}
+
 @app.get("/")
 def read_root():
     return {"message": "LightFM Recommender API is running"}
 
 @app.get("/recommend")
 def recommend(user_id: int, k: int = 5):
-    user_id_str = str(user_id)  # LabelEncoder stores strings
-
-    if user_id_str not in user_encoder.classes_:
+    # ✅ FIXED check here
+    if user_id not in user_encoder.classes_:
         raise HTTPException(status_code=404, detail="User not found in training data.")
 
-    encoded_user = user_encoder.transform([user_id_str])[0]
-    all_items = np.arange(len(item_encoder.classes_))  # numeric item indices
+    encoded_user = user_encoder.transform([user_id])[0]
 
-    scores = model.predict(encoded_user, all_items)
+    n_items = len(item_encoder.classes_)
+    scores = model.predict(user_ids=np.repeat(encoded_user, n_items),
+                           item_ids=np.arange(n_items))
 
-    top_indices = np.argsort(scores)[::-1][:k]
-    recommended_item_ids = item_encoder.inverse_transform(top_indices)
+    top_k = np.argsort(-scores)[:k]
+    recommended_items = [item_decoder[i] for i in top_k]
 
-    return {"user_id": user_id, "recommended_items": recommended_item_ids.tolist()}
+    return {"user_id": user_id, "recommended_items": recommended_items}
