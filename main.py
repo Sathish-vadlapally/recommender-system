@@ -1,52 +1,54 @@
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 import numpy as np
 import pickle
 from lightfm import LightFM
 
-app = FastAPI()
+app = FastAPI(title="🛒 Recommender System API")
 
 # Load model and encoders
-try:
-    with open("lightfm_model.pkl", "rb") as f:
-        model = pickle.load(f)
+with open("lightfm_model.pkl", "rb") as f:
+    model: LightFM = pickle.load(f)
 
-    with open("user_encoder.pkl", "rb") as f:
-        user_encoder = pickle.load(f)
+with open("user_encoder.pkl", "rb") as f:
+    user_encoder = pickle.load(f)
 
-    with open("item_encoder.pkl", "rb") as f:
-        item_encoder = pickle.load(f)
+with open("item_encoder.pkl", "rb") as f:
+    item_encoder = pickle.load(f)
 
-    n_items = len(item_encoder.classes_)
+# Total number of items in training
+n_items = len(item_encoder.classes_)
 
-except Exception as e:
-    raise RuntimeError(f"Failed to load model or encoders: {e}")
-
+class UserRequest(BaseModel):
+    user_id: int
 
 @app.get("/")
-def root():
-    return {"message": "✅ Recommender API is running."}
+def read_root():
+    return {"message": "✅ Recommender API is up. Use POST /recommend with user_id."}
 
-
-@app.get("/recommend/{user_id}")
-def recommend(user_id: str, k: int = 5):
+@app.post("/recommend")
+def recommend(user_req: UserRequest):
     try:
-        # Check if user exists in encoder
-        if user_id not in user_encoder.classes_:
-            raise HTTPException(status_code=404, detail="User not found in training data.")
+        user_id = user_req.user_id
 
-        # Encode user
+        # Convert user_id to internal encoding
+        if user_id not in user_encoder.classes_:
+            raise HTTPException(status_code=404, detail="404: User not found in training data.")
+
         user_idx = user_encoder.transform([user_id])[0]
 
         # Predict scores for all items
-        scores = model.predict(user_ids=np.repeat(user_idx, n_items), item_ids=np.arange(n_items))
+        scores = model.predict(user_ids=user_idx, item_ids=np.arange(n_items))
 
-        # Get top-k recommendations
-        top_k_item_indices = np.argsort(-scores)[:k]
-        top_k_product_ids = item_encoder.inverse_transform(top_k_item_indices)
+        # Top 5 recommended item indices
+        top_items = np.argsort(-scores)[:5]
+
+        # Decode item indices back to original product IDs
+        recommended_products = item_encoder.inverse_transform(top_items)
 
         return {
             "user_id": user_id,
-            "recommended_products": top_k_product_ids.tolist()
+            "recommended_product_ids": recommended_products.tolist()
         }
 
     except Exception as e:
