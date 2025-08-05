@@ -21,7 +21,7 @@ def root():
     return {"message": "LightFM Recommender is live!"}
 
 @app.get("/recommend/{user_id}")
-def recommend(user_id: str, k: int = 5):
+def recommend(user_id: int, k: int = 5):  # <-- change str to int
     if user_id not in user_enc.classes_:
         raise HTTPException(status_code=404, detail="User not found")
 
