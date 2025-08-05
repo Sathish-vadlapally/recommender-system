@@ -24,18 +24,17 @@ def read_root():
 
 @app.get("/recommend")
 def recommend(user_id: int, k: int = 5):
-    # Check if user_id exists
-    if user_id not in user_encoder:
+    user_id_str = str(user_id)
+
+    if user_id_str not in user_encoder.classes_:
         raise HTTPException(status_code=404, detail="User not found in training data.")
 
-    encoded_user = user_encoder[user_id]
-    all_items = list(item_encoder.values())
+    encoded_user = user_encoder.transform([user_id_str])[0]
+    all_items = np.arange(len(item_encoder.classes_))
 
-    # Predict scores for all items for this user
-    scores = model.predict(encoded_user, np.array(all_items))
-
-    # Get top-k recommendations
+    scores = model.predict(encoded_user, all_items)
     top_indices = np.argsort(scores)[::-1][:k]
-    recommended_item_ids = [item_decoder[all_items[i]] for i in top_indices]
+    recommended_item_ids = item_encoder.inverse_transform(top_indices)
 
-    return {"user_id": user_id, "recommended_items": recommended_item_ids}
+    return {"user_id": user_id, "recommended_items": recommended_item_ids.tolist()}
+
