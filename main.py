@@ -1,60 +1,53 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
 import numpy as np
 import pickle
 from lightfm import LightFM
-from scipy.sparse import load_npz
 
 app = FastAPI()
 
-# Load model
-with open("lightfm_model.pkl", "rb") as f:
-    model = pickle.load(f)
+# Load model and encoders
+try:
+    with open("lightfm_model.pkl", "rb") as f:
+        model = pickle.load(f)
 
-interactions = load_npz("interactions.npz")
+    with open("user_encoder.pkl", "rb") as f:
+        user_encoder = pickle.load(f)
 
-# Load mappings
-with open("user_id_map.pkl", "rb") as f:
-    user_id_map = pickle.load(f)
+    with open("item_encoder.pkl", "rb") as f:
+        item_encoder = pickle.load(f)
 
-with open("item_id_map.pkl", "rb") as f:
-    item_id_map = pickle.load(f)
+    n_items = len(item_encoder.classes_)
 
-# Reverse item mapping
-reverse_item_id_map = {v: k for k, v in item_id_map.items()}
-
-
-class RecommendationRequest(BaseModel):
-    user_id: str  # Accept as string
-    num_recommendations: int = 5
+except Exception as e:
+    raise RuntimeError(f"Failed to load model or encoders: {e}")
 
 
 @app.get("/")
-def read_root():
-    return {"message": "LightFM recommender system is running."}
+def root():
+    return {"message": "✅ Recommender API is running."}
 
 
-@app.post("/recommend/")
-def recommend(request: RecommendationRequest):
-    user_id = str(request.user_id)  # Convert to string for safety
-    N = request.num_recommendations
+@app.get("/recommend/{user_id}")
+def recommend(user_id: str, k: int = 5):
+    try:
+        # Check if user exists in encoder
+        if user_id not in user_encoder.classes_:
+            raise HTTPException(status_code=404, detail="User not found in training data.")
 
-    if user_id not in user_id_map:
-        raise HTTPException(status_code=404, detail=f"User ID '{user_id}' not found.")
+        # Encode user
+        user_idx = user_encoder.transform([user_id])[0]
 
-    user_index = user_id_map[user_id]
+        # Predict scores for all items
+        scores = model.predict(user_ids=np.repeat(user_idx, n_items), item_ids=np.arange(n_items))
 
-    scores = model.predict(user_ids=user_index, item_ids=np.arange(len(item_id_map)))
+        # Get top-k recommendations
+        top_k_item_indices = np.argsort(-scores)[:k]
+        top_k_product_ids = item_encoder.inverse_transform(top_k_item_indices)
 
-    # Remove already interacted items
-    user_interactions = interactions[user_index].toarray().flatten()
-    scores[user_interactions > 0] = -np.inf
+        return {
+            "user_id": user_id,
+            "recommended_products": top_k_product_ids.tolist()
+        }
 
-    # Get top-N
-    top_indices = np.argsort(scores)[-N:][::-1]
-    recommended_items = [reverse_item_id_map[i] for i in top_indices]
-
-    return {
-        "user_id": user_id,
-        "recommended_items": recommended_items
-    }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
