@@ -1,6 +1,7 @@
 numpy==1.26.4
-git+https://github.com/lyst/lightfm.git
 scikit-learn==1.4.2
 pandas==2.2.2
 fastapi==0.111.0
 uvicorn==0.29.0
+scipy==1.13.1
+git+https://github.com/lyst/lightfm.git
