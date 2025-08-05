@@ -15,26 +15,31 @@ with open("user_encoder.pkl", "rb") as f:
 with open("item_encoder.pkl", "rb") as f:
     item_encoder = pickle.load(f)
 
-# Build item index to product_id decoder
-item_decoder = {i: item_encoder.classes_[i] for i in range(len(item_encoder.classes_))}
-
 @app.get("/")
 def read_root():
-    return {"message": "LightFM Recommender API is running"}
+    return {"message": "✅ LightFM Recommender API is running."}
 
 @app.get("/recommend")
 def recommend(user_id: int, k: int = 5):
-    # ✅ FIXED check here
+    # Convert user_id to correct dtype (usually str or int)
+    try:
+        user_id = str(user_id) if user_encoder.classes_.dtype.type is np.str_ else int(user_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid user_id format.")
+
     if user_id not in user_encoder.classes_:
         raise HTTPException(status_code=404, detail="User not found in training data.")
 
-    encoded_user = user_encoder.transform([user_id])[0]
+    user_idx = user_encoder.transform([user_id])[0]
+    item_indices = np.arange(len(item_encoder.classes_))
 
-    n_items = len(item_encoder.classes_)
-    scores = model.predict(user_ids=np.repeat(encoded_user, n_items),
-                           item_ids=np.arange(n_items))
+    scores = model.predict(user_ids=np.repeat(user_idx, len(item_indices)),
+                           item_ids=item_indices)
 
     top_k = np.argsort(-scores)[:k]
-    recommended_items = [item_decoder[i] for i in top_k]
+    recommended_items = item_encoder.inverse_transform(top_k)
 
-    return {"user_id": user_id, "recommended_items": recommended_items}
+    return {
+        "user_id": user_id,
+        "recommended_items": recommended_items.tolist()
+    }
