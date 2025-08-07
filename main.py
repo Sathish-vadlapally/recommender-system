@@ -1,13 +1,12 @@
-import pandas as pd
-import numpy as np
-import pickle
 from fastapi import FastAPI, HTTPException
-from lightfm import LightFM
-import traceback
+from pydantic import BaseModel
+import pickle
+import numpy as np
+import pandas as pd
 
 app = FastAPI()
 
-# Load model and encoders
+# Load LightFM model and encoders
 with open("lightfm_model.pkl", "rb") as f:
     model = pickle.load(f)
 
@@ -18,40 +17,40 @@ with open("item_encoder.pkl", "rb") as f:
     item_encoder = pickle.load(f)
 
 # Load product metadata
-products_df = pd.read_csv("products.csv")
-products_df = products_df[["product_id", "product_name"]]
-products_df.set_index("product_id", inplace=True)
+products_df = pd.read_csv("products.csv")  # should have 'product_id' and 'product_name'
 
-# Total number of items
-n_items = len(item_encoder.classes_)
-
-# Health check
 @app.get("/")
-def root():
-    return {"message": "API is running"}
+def read_root():
+    return {"message": "✅ LightFM Recommender API is running."}
 
-# Recommendation endpoint
 @app.get("/recommend")
 def recommend(user_id: int, k: int = 5):
+    # Handle user_id format
     try:
-        user_index = user_encoder.transform([user_id])[0]
-        scores = model.predict(user_ids=user_index, item_ids=np.arange(n_items))
-        top_items = np.argsort(-scores)[:k]
+        user_id = str(user_id) if user_encoder.classes_.dtype.type is np.str_ else int(user_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid user_id format.")
 
-        recommendations = []
-        for i in top_items:
-            product_id = item_encoder.inverse_transform([i])[0]
-            if product_id in products_df.index:
-                product_name = products_df.loc[product_id]["product_name"]
-                recommendations.append({
-                    "product_id": product_id,
-                    "product_name": product_name
-                })
+    if user_id not in user_encoder.classes_:
+        raise HTTPException(status_code=404, detail="User not found in training data.")
 
-        return {"user_id": user_id, "recommendations": recommendations}
+    user_idx = user_encoder.transform([user_id])[0]
+    item_indices = np.arange(len(item_encoder.classes_))
 
-    except ValueError:
-        raise HTTPException(status_code=404, detail="User ID not found")
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+    scores = model.predict(user_ids=np.repeat(user_idx, len(item_indices)),
+                           item_ids=item_indices)
+
+    top_k = np.argsort(-scores)[:k]
+    recommended_ids = item_encoder.inverse_transform(top_k)
+
+    # Get product names from product IDs
+    recommended_names = []
+    for pid in recommended_ids:
+        name = products_df.loc[products_df['product_id'] == pid, 'product_name']
+        recommended_names.append(name.values[0] if not name.empty else "Unknown Product")
+
+    return {
+        "user_id": user_id,
+        "recommended_product_ids": recommended_ids.tolist(),
+        "recommended_product_names": recommended_names
+    }
