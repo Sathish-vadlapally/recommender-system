@@ -1,7 +1,8 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-import pickle
+import pandas as pd
 import numpy as np
+import pickle
+from fastapi import FastAPI, HTTPException
+from lightfm import LightFM
 
 app = FastAPI()
 
@@ -15,31 +16,29 @@ with open("user_encoder.pkl", "rb") as f:
 with open("item_encoder.pkl", "rb") as f:
     item_encoder = pickle.load(f)
 
-@app.get("/")
-def read_root():
-    return {"message": "✅ LightFM Recommender API is running."}
+# Load product data with metadata
+products_df = pd.read_csv("products.csv")
+products_df = products_df[["product_id", "product_name", "aisle", "department"]]
+products_df.set_index("product_id", inplace=True)
+
+# Total number of items
+n_items = len(item_encoder.classes_)
 
 @app.get("/recommend")
 def recommend(user_id: int, k: int = 5):
-    # Convert user_id to correct dtype (usually str or int)
     try:
-        user_id = str(user_id) if user_encoder.classes_.dtype.type is np.str_ else int(user_id)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid user_id format.")
+        user_index = user_encoder.transform([user_id])[0]
+    except ValueError:
+        raise HTTPException(status_code=404, detail="User ID not found")
 
-    if user_id not in user_encoder.classes_:
-        raise HTTPException(status_code=404, detail="User not found in training data.")
+    scores = model.predict(user_ids=user_index, item_ids=np.arange(n_items))
+    top_items = np.argsort(-scores)[:k]
 
-    user_idx = user_encoder.transform([user_id])[0]
-    item_indices = np.arange(len(item_encoder.classes_))
+    recommended = []
+    for i in top_items:
+        product_id = item_encoder.inverse_transform([i])[0]
+        if product_id in products_df.index:
+            product_info = products_df.loc[product_id].to_dict()
+            recommended.append(product_info)
 
-    scores = model.predict(user_ids=np.repeat(user_idx, len(item_indices)),
-                           item_ids=item_indices)
-
-    top_k = np.argsort(-scores)[:k]
-    recommended_items = item_encoder.inverse_transform(top_k)
-
-    return {
-        "user_id": user_id,
-        "recommended_items": recommended_items.tolist()
-    }
+    return {"recommendations": recommended}

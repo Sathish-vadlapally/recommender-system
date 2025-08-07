@@ -1,0 +1,76 @@
+product_id,product_name,aisle,department
+1,Soft Drinks Product 1,Soft Drinks,Beverages
+2,Soft Drinks Product 2,Soft Drinks,Beverages
+3,Soft Drinks Product 3,Soft Drinks,Beverages
+4,Soft Drinks Product 4,Soft Drinks,Beverages
+5,Soft Drinks Product 5,Soft Drinks,Beverages
+6,Juice Product 1,Juice,Beverages
+7,Juice Product 2,Juice,Beverages
+8,Juice Product 3,Juice,Beverages
+9,Juice Product 4,Juice,Beverages
+10,Juice Product 5,Juice,Beverages
+11,Water Product 1,Water,Beverages
+12,Water Product 2,Water,Beverages
+13,Water Product 3,Water,Beverages
+14,Water Product 4,Water,Beverages
+15,Water Product 5,Water,Beverages
+16,Chips Product 1,Chips,Snacks
+17,Chips Product 2,Chips,Snacks
+18,Chips Product 3,Chips,Snacks
+19,Chips Product 4,Chips,Snacks
+20,Chips Product 5,Chips,Snacks
+21,Cookies Product 1,Cookies,Snacks
+22,Cookies Product 2,Cookies,Snacks
+23,Cookies Product 3,Cookies,Snacks
+24,Cookies Product 4,Cookies,Snacks
+25,Cookies Product 5,Cookies,Snacks
+26,Candy Product 1,Candy,Snacks
+27,Candy Product 2,Candy,Snacks
+28,Candy Product 3,Candy,Snacks
+29,Candy Product 4,Candy,Snacks
+30,Candy Product 5,Candy,Snacks
+31,Milk Product 1,Milk,Dairy
+32,Milk Product 2,Milk,Dairy
+33,Milk Product 3,Milk,Dairy
+34,Milk Product 4,Milk,Dairy
+35,Milk Product 5,Milk,Dairy
+36,Yogurt Product 1,Yogurt,Dairy
+37,Yogurt Product 2,Yogurt,Dairy
+38,Yogurt Product 3,Yogurt,Dairy
+39,Yogurt Product 4,Yogurt,Dairy
+40,Yogurt Product 5,Yogurt,Dairy
+41,Cheese Product 1,Cheese,Dairy
+42,Cheese Product 2,Cheese,Dairy
+43,Cheese Product 3,Cheese,Dairy
+44,Cheese Product 4,Cheese,Dairy
+45,Cheese Product 5,Cheese,Dairy
+46,Fruits Product 1,Fruits,Produce
+47,Fruits Product 2,Fruits,Produce
+48,Fruits Product 3,Fruits,Produce
+49,Fruits Product 4,Fruits,Produce
+50,Fruits Product 5,Fruits,Produce
+51,Vegetables Product 1,Vegetables,Produce
+52,Vegetables Product 2,Vegetables,Produce
+53,Vegetables Product 3,Vegetables,Produce
+54,Vegetables Product 4,Vegetables,Produce
+55,Vegetables Product 5,Vegetables,Produce
+56,Herbs Product 1,Herbs,Produce
+57,Herbs Product 2,Herbs,Produce
+58,Herbs Product 3,Herbs,Produce
+59,Herbs Product 4,Herbs,Produce
+60,Herbs Product 5,Herbs,Produce
+61,Bread Product 1,Bread,Bakery
+62,Bread Product 2,Bread,Bakery
+63,Bread Product 3,Bread,Bakery
+64,Bread Product 4,Bread,Bakery
+65,Bread Product 5,Bread,Bakery
+66,Pastries Product 1,Pastries,Bakery
+67,Pastries Product 2,Pastries,Bakery
+68,Pastries Product 3,Pastries,Bakery
+69,Pastries Product 4,Pastries,Bakery
+70,Pastries Product 5,Pastries,Bakery
+71,Bagels Product 1,Bagels,Bakery
+72,Bagels Product 2,Bagels,Bakery
+73,Bagels Product 3,Bagels,Bakery
+74,Bagels Product 4,Bagels,Bakery
+75,Bagels Product 5,Bagels,Bakery
